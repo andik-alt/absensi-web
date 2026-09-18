@@ -1,7 +1,9 @@
 <?php
+require 'auth.php';
 include 'koneksi.php';
 
 $pesan = "";
+
 
 if (!isset($_GET['id']) && !isset($_POST['id'])) {
     die("ID siswa tidak ditemukan.");
@@ -46,7 +48,7 @@ if (!$siswa) {
 <head>
     <meta charset="UTF-8">
     <title>Edit Siswa</title>
-    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
