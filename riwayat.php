@@ -1,6 +1,7 @@
 <?php
+require 'auth.php';
 include 'koneksi.php';
-date_default_timezone_set('Asia/Jakarta');
+
 $tanggal = isset($_GET['tanggal']) ? $_GET['tanggal'] : date('Y-m-d');
 
 $stmt = $koneksi->prepare("
