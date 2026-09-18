@@ -21,14 +21,17 @@ if (!$siswa) {
     die("Siswa dengan NISN tersebut tidak ditemukan.");
 }
 
+
 if (!is_dir('qr')) {
     mkdir('qr', 0777, true);
 }
+
 
 $generator = new BarcodeGeneratorPNG();
 $widthFactor = 4;   
 $barHeight   = 120; 
 $barcodePng  = $generator->getBarcode($nisn, $generator::TYPE_CODE_128, $widthFactor, $barHeight);
+
 
 $barcodeImg = imagecreatefromstring($barcodePng);
 $origW = imagesx($barcodeImg);
@@ -44,7 +47,7 @@ $black  = imagecolorallocate($canvas, 20, 25, 45);
 imagefill($canvas, 0, 0, $white);
 imagecopy($canvas, $barcodeImg, $margin, $margin, 0, 0, $origW, $origH);
 
-$fontSize = 4; 
+$fontSize = 4;
 $textW = imagefontwidth($fontSize) * strlen($nisn);
 $textX = (int)(($newW - $textW) / 2);
 $textY = $margin + $origH + 8;
