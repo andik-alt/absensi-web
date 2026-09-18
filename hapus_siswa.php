@@ -1,4 +1,5 @@
 <?php
+require 'auth.php';
 include 'koneksi.php';
 
 if (!isset($_GET['id'])) {
