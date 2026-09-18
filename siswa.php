@@ -1,4 +1,5 @@
 <?php
+require 'auth.php';
 include 'koneksi.php';
 
 $query = "SELECT * FROM siswa ORDER BY nama ASC";
@@ -16,7 +17,7 @@ $result = $koneksi->query($query);
     <div class="container">
         <h1>DATA SISWA</h1>
 
-        <a href="tambah_siswa.php" class="btn">+ Tambah Siswa</a> <br>
+        <a href="tambah_siswa.php" class="btn">+ Tambah Siswa</a>
         <a href="index.php" class="btn">Kembali</a>
 
         <table border="1" cellpadding="8" cellspacing="0">
@@ -25,7 +26,7 @@ $result = $koneksi->query($query);
                 <th>Nama</th>
                 <th>Kelas</th>
                 <th>Jurusan</th>
-                <th>QR Code</th>
+                <th>BarCode</th>
                 <th>Aksi</th>
             </tr>
 
@@ -37,7 +38,7 @@ $result = $koneksi->query($query);
                         <td><?= htmlspecialchars($row['kelas']) ?></td>
                         <td><?= htmlspecialchars($row['jurusan']) ?></td>
                         <td>
-                            <a href="generate_qr.php?nisn=<?= urlencode($row['nisn']) ?>">Lihat QR</a>
+                            <a href="generate_qr.php?nisn=<?= urlencode($row['nisn']) ?>">Lihat BarCode</a>
                         </td>
                         <td>
                             <a href="edit_siswa.php?id=<?= $row['id'] ?>">Edit</a> |
