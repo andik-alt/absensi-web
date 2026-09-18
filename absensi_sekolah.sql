@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Sep 17, 2026 at 03:40 AM
+-- Generation Time: Sep 18, 2026 at 04:15 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -50,7 +50,9 @@ INSERT INTO `absensi` (`id`, `nisn`, `tanggal`, `jam`, `status`) VALUES
 (8, '1372138273', '2026-09-15', '07:22:59', 'Hadir'),
 (9, '1372138273', '2026-09-16', '10:09:30', 'Hadir'),
 (10, '2748727482', '2026-09-16', '11:22:26', 'Hadir'),
-(11, '8992745000112', '2026-09-17', '08:23:48', 'Terlambat');
+(11, '8992745000112', '2026-09-17', '08:23:48', 'Terlambat'),
+(12, '1372138273', '2026-09-17', '08:55:43', 'Terlambat'),
+(13, '2748727482', '2026-09-18', '09:05:36', 'Izin');
 
 -- --------------------------------------------------------
 
@@ -92,8 +94,7 @@ CREATE TABLE `siswa` (
 
 INSERT INTO `siswa` (`id`, `nisn`, `nama`, `kelas`, `jurusan`, `foto`) VALUES
 (12, '2748727482', 'malaww', 'XII', 'rpl2', NULL),
-(13, '1372138273', 'ANDIK', 'XII', 'rpl2', NULL),
-(14, '8992745000112', 'yuda', 'XII', 'rpl2', NULL);
+(13, '1372138273', 'ANDIK', 'XII', 'rpl2', NULL);
 
 --
 -- Indexes for dumped tables
@@ -103,7 +104,8 @@ INSERT INTO `siswa` (`id`, `nisn`, `nama`, `kelas`, `jurusan`, `foto`) VALUES
 -- Indexes for table `absensi`
 --
 ALTER TABLE `absensi`
-  ADD PRIMARY KEY (`id`);
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `unik_nisn_tanggal` (`nisn`,`tanggal`);
 
 --
 -- Indexes for table `admin`
@@ -126,7 +128,7 @@ ALTER TABLE `siswa`
 -- AUTO_INCREMENT for table `absensi`
 --
 ALTER TABLE `absensi`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
 
 --
 -- AUTO_INCREMENT for table `admin`
