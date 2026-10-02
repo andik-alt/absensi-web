@@ -13,8 +13,6 @@ $isLoggedIn = isset($_SESSION['admin_id']);
 <body class="home-body">
 
     <div class="gate">
-        <div class="gate__pattern"></div>
-        <div class="gate__scanline"></div>
 
         <p class="gate__eyebrow">Gerbang Absensi Digital</p>
         <h1 class="gate__title">SISTEM ABSENSI</h1>
