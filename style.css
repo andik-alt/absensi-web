@@ -1,8 +1,3 @@
-/* ============================================
-   style.css — Sistem Absensi Sekolah
-   Konsep: kartu ID pelajar / gerbang absensi
-   ============================================ */
-
 @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap');
 
 :root {
@@ -10,10 +5,10 @@
     --navy-light:  #1F2E52;
     --bg:          #F0F2F6;
     --card:        #FFFFFF;
-    --accent:      #2F9E77;   /* hijau: hadir / aksi utama */
+    --accent:      #2F9E77;   
     --accent-dark: #23805F;
-    --warn:        #E8A33D;   /* kuning: izin / peringatan */
-    --danger:      #E15554;   /* merah: hapus / alpa / gagal */
+    --warn:        #E8A33D;   
+    --danger:      #E15554;  
     --border:      #DADFE8;
     --text:        #1B2233;
     --text-muted:  #6B7280;
@@ -36,7 +31,6 @@ body {
     color: var(--text);
 }
 
-/* ---------- Kartu utama ---------- */
 .container {
     max-width: 760px;
     margin: 0 auto;
@@ -48,7 +42,6 @@ body {
     position: relative;
 }
 
-/* Sudut kartu ID — signature element */
 .container::before,
 .container::after {
     content: "";
@@ -76,7 +69,6 @@ h1 {
 p { line-height: 1.6; }
 p strong { color: var(--navy); font-family: var(--font-mono); font-weight: 700; }
 
-/* ---------- Menu utama (index.php) ---------- */
 .menu {
     display: flex;
     flex-direction: column;
@@ -181,7 +173,6 @@ p strong { color: var(--navy); font-family: var(--font-mono); font-weight: 700; 
     .menu-card--accent { flex-direction: column; align-items: flex-start; }
 }
 
-/* ---------- Tombol ---------- */
 .btn,
 button,
 input[type="submit"] {
@@ -213,7 +204,6 @@ input[type="submit"]:hover {
 .btn:active,
 button:active { transform: translateY(0); }
 
-/* Tombol hijau untuk aksi "simpan / positif" */
 form button[type="submit"] {
     background: var(--accent);
 }
@@ -224,11 +214,9 @@ form button[type="submit"]:hover {
 a { color: var(--accent-dark); }
 a:hover { color: var(--accent); }
 
-/* Link "Hapus" bergaya bahaya */
 a[href*="hapus"] { color: var(--danger); }
 a[href*="hapus"]:hover { text-decoration: underline; }
 
-/* ---------- Form ---------- */
 form { margin: 16px 0; }
 
 label {
@@ -267,7 +255,6 @@ input:disabled {
     color: var(--text-muted);
 }
 
-/* Kolom scan besar di scan.php */
 #nisn {
     font-family: var(--font-mono);
     font-size: 22px !important;
@@ -284,7 +271,6 @@ input:disabled {
     letter-spacing: 0.03em;
 }
 
-/* ---------- Tabel ---------- */
 table {
     width: 100%;
     border-collapse: collapse;
@@ -315,18 +301,15 @@ table td { font-family: var(--font-mono); font-size: 13.5px; }
 table tr:nth-child(even) { background: #F7F8FB; }
 table tr:hover { background: #EEF6F2; }
 
-/* Status pill di rekap / riwayat */
 table td:last-child:not(:has(a)) {
     font-family: var(--font-body);
     font-weight: 600;
 }
 
-/* ---------- Halaman hasil scan (proses_absen.php) ---------- */
 .container h1[style*="green"]  { color: var(--accent) !important; border-color: var(--accent); }
 .container h1[style*="orange"] { color: var(--warn) !important; border-color: var(--warn); }
 .container h1[style*="red"]    { color: var(--danger) !important; border-color: var(--danger); }
 
-/* ---------- QR Code ---------- */
 img[alt="QR Code"] {
     border: 6px solid var(--navy);
     border-radius: 10px;
@@ -335,7 +318,6 @@ img[alt="QR Code"] {
     margin: 16px 0;
 }
 
-/* ---------- Responsif ---------- */
 @media (max-width: 640px) {
     .container { padding: 22px 18px 26px; }
     h1 { font-size: 20px; }
@@ -368,25 +350,6 @@ input:focus-visible {
     padding: 46px 24px 40px;
     text-align: center;
     border-bottom: 3px solid var(--accent);
-}
-
-
-.gate__pattern {
-    position: absolute;
-    inset: 0;
-    background-image: radial-gradient(circle, rgba(47,158,119,0.18) 1.6px, transparent 1.6px);
-    background-size: 16px 16px;
-    opacity: 0.6;
-    pointer-events: none;
-}
-
-.gate__scanline {
-    position: absolute;
-    left: 0; right: 0;
-    height: 2px;
-    background: linear-gradient(90deg, transparent, var(--accent) 20%, var(--accent) 80%, transparent);
-    box-shadow: 0 0 14px 2px rgba(47, 158, 119, 0.7);
-    animation: scan-move 3.2s ease-in-out infinite;
 }
 
 @keyframes scan-move {
