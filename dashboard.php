@@ -4,43 +4,65 @@ include 'koneksi.php';
 
 $tanggal = date('Y-m-d');
 
-/* Total siswa */
+$nama_hari  = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+$nama_bulan = [1 => 'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+               'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+$tanggal_indo = $nama_hari[(int) date('w')] . ', ' . date('d') . ' ' .
+                $nama_bulan[(int) date('n')] . ' ' . date('Y');
+
 $result = $koneksi->query("SELECT COUNT(*) AS total FROM siswa");
 $total_siswa = (int) $result->fetch_assoc()['total'];
 
-/* Statistik absensi hari ini */
-$stmt = $koneksi->prepare("
+$stmt_stat = $koneksi->prepare("
     SELECT
         COUNT(*) AS total_absen,
-        SUM(CASE WHEN jam_masuk IS NOT NULL THEN 1 ELSE 0 END) AS sudah_masuk,
-        SUM(CASE WHEN status_masuk = 'Hadir' THEN 1 ELSE 0 END) AS hadir,
-        SUM(CASE WHEN status_masuk = 'Terlambat' THEN 1 ELSE 0 END) AS terlambat,
-        SUM(CASE WHEN jam_pulang IS NOT NULL THEN 1 ELSE 0 END) AS sudah_pulang
-    FROM absensi
-    WHERE tanggal = ?
+        SUM(a.status_masuk = 'Hadir')     AS hadir,
+        SUM(a.status_masuk = 'Terlambat') AS terlambat,
+        SUM(a.status_masuk = 'Izin')      AS izin,
+        SUM(a.status_masuk = 'Sakit')     AS sakit,
+        SUM(a.jam_pulang IS NOT NULL
+            AND a.status_masuk IN ('Hadir', 'Terlambat')) AS sudah_pulang
+    FROM absensi a
+    INNER JOIN siswa s ON s.nisn = a.nisn
+    WHERE a.tanggal = ?
 ");
-$stmt->bind_param("s", $tanggal);
-$stmt->execute();
-$stat = $stmt->get_result()->fetch_assoc();
-$stmt->close();
+$stmt_stat->bind_param("s", $tanggal);
+$stmt_stat->execute();
+$stat = $stmt_stat->get_result()->fetch_assoc();
+$stmt_stat->close();
 
-$sudah_masuk = (int)($stat['sudah_masuk'] ?? 0);
-$hadir = (int)($stat['hadir'] ?? 0);
-$terlambat = (int)($stat['terlambat'] ?? 0);
+$total_absen  = (int)($stat['total_absen'] ?? 0);
+$hadir        = (int)($stat['hadir'] ?? 0);
+$terlambat    = (int)($stat['terlambat'] ?? 0);
+$izin         = (int)($stat['izin'] ?? 0);
+$sakit        = (int)($stat['sakit'] ?? 0);
 $sudah_pulang = (int)($stat['sudah_pulang'] ?? 0);
 
-$belum_masuk = max(0, $total_siswa - $sudah_masuk);
+$sudah_masuk  = $hadir + $terlambat;
+$belum_absen  = max(0, $total_siswa - $total_absen);
 $belum_pulang = max(0, $sudah_masuk - $sudah_pulang);
 
-/* Jadwal */
 $pengaturan = null;
 $cek_pengaturan = $koneksi->query("SELECT * FROM pengaturan_absensi ORDER BY id DESC LIMIT 1");
 if ($cek_pengaturan && $cek_pengaturan->num_rows > 0) {
     $pengaturan = $cek_pengaturan->fetch_assoc();
 }
 
-/* 10 absensi terbaru hari ini */
-$stmt = $koneksi->prepare("
+$pulang_khusus_aktif = false;
+$jam_pulang_hari_ini = null;
+if ($pengaturan) {
+    $jam_pulang_hari_ini = $pengaturan['jam_pulang'];
+    if (
+        (int)$pengaturan['aktif_pulang_khusus'] === 1 &&
+        !empty($pengaturan['tanggal_pulang_khusus']) &&
+        $pengaturan['tanggal_pulang_khusus'] === $tanggal &&
+        !empty($pengaturan['jam_pulang_khusus'])
+    ) {
+        $pulang_khusus_aktif = true;
+        $jam_pulang_hari_ini = $pengaturan['jam_pulang_khusus'];
+    }
+}
+$stmt_terbaru = $koneksi->prepare("
     SELECT
         s.nisn,
         s.nama,
@@ -52,12 +74,12 @@ $stmt = $koneksi->prepare("
     FROM absensi a
     INNER JOIN siswa s ON s.nisn = a.nisn
     WHERE a.tanggal = ?
-    ORDER BY COALESCE(a.jam_masuk, a.jam, '00:00:00') DESC
+    ORDER BY COALESCE(a.jam_masuk, '00:00:00') DESC
     LIMIT 10
 ");
-$stmt->bind_param("s", $tanggal);
-$stmt->execute();
-$terbaru = $stmt->get_result();
+$stmt_terbaru->bind_param("s", $tanggal);
+$stmt_terbaru->execute();
+$terbaru = $stmt_terbaru->get_result();
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -219,6 +241,16 @@ $terbaru = $stmt->get_result();
             color: #9A671A;
         }
 
+        .status-izin {
+            background: #E9F0FF;
+            color: #315B9A;
+        }
+
+        .status-sakit {
+            background: #FDEBEC;
+            color: #A63A43;
+        }
+
         .status-pulang {
             background: #E9F0FF;
             color: #315B9A;
@@ -309,7 +341,7 @@ $terbaru = $stmt->get_result();
         <div>
             <h1>DASHBOARD ABSENSI</h1>
             <p class="dashboard-date">
-                <?= date('l, d F Y') ?> · Admin:
+                <?= htmlspecialchars($tanggal_indo) ?> · Admin:
                 <strong><?= htmlspecialchars($_SESSION['admin_username'] ?? 'Admin') ?></strong>
             </p>
         </div>
@@ -340,9 +372,21 @@ $terbaru = $stmt->get_result();
         </div>
 
         <div class="stat-card">
-            <span class="stat-card__label">Belum Masuk</span>
-            <span class="stat-card__number"><?= $belum_masuk ?></span>
-            <div class="stat-card__small">Belum melakukan absen masuk</div>
+            <span class="stat-card__label">Belum Absen</span>
+            <span class="stat-card__number"><?= $belum_absen ?></span>
+            <div class="stat-card__small">Belum ada catatan hari ini</div>
+        </div>
+
+        <div class="stat-card">
+            <span class="stat-card__label">Izin</span>
+            <span class="stat-card__number"><?= $izin ?></span>
+            <div class="stat-card__small">Hari ini</div>
+        </div>
+
+        <div class="stat-card stat-card--red">
+            <span class="stat-card__label">Sakit</span>
+            <span class="stat-card__number"><?= $sakit ?></span>
+            <div class="stat-card__small">Hari ini</div>
         </div>
 
         <div class="stat-card stat-card--green">
@@ -375,29 +419,11 @@ $terbaru = $stmt->get_result();
 
                 <div class="schedule-item">
                     <span>Jam Pulang</span>
-                    <strong>
-                        <?php
-                        $pulang = $pengaturan['jam_pulang'];
-                        if (
-                            (int)$pengaturan['aktif_pulang_khusus'] === 1 &&
-                            !empty($pengaturan['tanggal_pulang_khusus']) &&
-                            $pengaturan['tanggal_pulang_khusus'] === $tanggal &&
-                            !empty($pengaturan['jam_pulang_khusus'])
-                        ) {
-                            $pulang = $pengaturan['jam_pulang_khusus'];
-                        }
-                        echo htmlspecialchars(substr($pulang, 0, 5));
-                        ?>
-                    </strong>
+                    <strong><?= htmlspecialchars(substr($jam_pulang_hari_ini, 0, 5)) ?></strong>
                 </div>
             </div>
 
-            <?php if (
-                (int)$pengaturan['aktif_pulang_khusus'] === 1 &&
-                !empty($pengaturan['tanggal_pulang_khusus']) &&
-                $pengaturan['tanggal_pulang_khusus'] === $tanggal &&
-                !empty($pengaturan['jam_pulang_khusus'])
-            ): ?>
+            <?php if ($pulang_khusus_aktif): ?>
                 <div class="special-note">
                     <strong>Jadwal pulang khusus aktif hari ini.</strong>
                     Jam pulang diatur menjadi
@@ -441,12 +467,13 @@ $terbaru = $stmt->get_result();
 
                 <?php if ($terbaru && $terbaru->num_rows > 0): ?>
                     <?php while ($row = $terbaru->fetch_assoc()): ?>
+                        <?php $hadir_fisik = in_array($row['status_masuk'], ['Hadir', 'Terlambat'], true); ?>
                         <tr>
                             <td><?= htmlspecialchars($row['nisn']) ?></td>
                             <td><?= htmlspecialchars($row['nama']) ?></td>
                             <td><?= htmlspecialchars($row['kelas']) ?></td>
                             <td>
-                                <?= !empty($row['jam_masuk'])
+                                <?= ($hadir_fisik && !empty($row['jam_masuk']))
                                     ? htmlspecialchars(substr($row['jam_masuk'], 0, 5))
                                     : '-' ?>
                             </td>
@@ -455,12 +482,18 @@ $terbaru = $stmt->get_result();
                                     <span class="status-badge status-hadir">Hadir</span>
                                 <?php elseif ($row['status_masuk'] === 'Terlambat'): ?>
                                     <span class="status-badge status-telat">Terlambat</span>
+                                <?php elseif ($row['status_masuk'] === 'Izin'): ?>
+                                    <span class="status-badge status-izin">Izin</span>
+                                <?php elseif ($row['status_masuk'] === 'Sakit'): ?>
+                                    <span class="status-badge status-sakit">Sakit</span>
                                 <?php else: ?>
                                     <span class="status-badge status-belum">-</span>
                                 <?php endif; ?>
                             </td>
                             <td>
-                                <?php if (!empty($row['jam_pulang'])): ?>
+                                <?php if (!$hadir_fisik): ?>
+                                    -
+                                <?php elseif (!empty($row['jam_pulang'])): ?>
                                     <span class="status-badge status-pulang">
                                         <?= htmlspecialchars(substr($row['jam_pulang'], 0, 5)) ?>
                                     </span>
@@ -481,7 +514,7 @@ $terbaru = $stmt->get_result();
 
 </div>
 
-<?php $stmt->close(); ?>
+<?php $stmt_terbaru->close(); ?>
 
 </body>
 </html>
