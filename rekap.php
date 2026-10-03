@@ -2,7 +2,10 @@
 require 'auth.php';
 include 'koneksi.php';
 
-$bulan = isset($_GET['bulan']) ? $_GET['bulan'] : date('Y-m');
+$bulan = $_GET['bulan'] ?? date('Y-m');
+if (!preg_match('/^\d{4}-(0[1-9]|1[0-2])$/', $bulan)) {
+    $bulan = date('Y-m');
+}
 $jumlahHari = (int) date('t', strtotime($bulan . '-01'));
 $hariIni = date('Y-m-d');
 
@@ -12,20 +15,21 @@ while ($row = $res->fetch_assoc()) {
     $daftarSiswa[] = $row;
 }
 
-$stmt = $koneksi->prepare("SELECT nisn, tanggal, status FROM absensi WHERE DATE_FORMAT(tanggal, '%Y-%m') = ?");
+$stmt = $koneksi->prepare("SELECT nisn, tanggal, status_masuk FROM absensi WHERE DATE_FORMAT(tanggal, '%Y-%m') = ?");
 $stmt->bind_param("s", $bulan);
 $stmt->execute();
 $hasil = $stmt->get_result();
 $absensiPerSiswa = [];
 while ($row = $hasil->fetch_assoc()) {
-    $absensiPerSiswa[$row['nisn']][$row['tanggal']] = $row['status'];
+    $absensiPerSiswa[$row['nisn']][$row['tanggal']] = $row['status_masuk'];
 }
+$stmt->close();
 
 $rekapAkhir = [];
 foreach ($daftarSiswa as $siswa) {
     $nisn = $siswa['nisn'];
-    $masuk = 0;       
-    $tidakMasuk = 0;  
+    $masuk = 0;
+    $tidakMasuk = 0;
     $izin = 0;
     $sakit = 0;
     $terlambat = 0;
@@ -81,7 +85,7 @@ $labelBulan = $namaBulanIndo[$bagianBulan[1]] . ' ' . $bagianBulan[0];
 
     <div class="container">
         <h1>REKAP ABSENSI BULANAN</h1>
-        <p>Bulan: <strong><?= $labelBulan ?></strong></p>
+        <p>Bulan: <strong><?= htmlspecialchars($labelBulan) ?></strong></p>
 
         <form method="GET" action="rekap.php">
             <label>Pilih Bulan:</label><br>
@@ -90,7 +94,7 @@ $labelBulan = $namaBulanIndo[$bagianBulan[1]] . ' ' . $bagianBulan[0];
         </form>
 
         <br>
-        <a href="index.php" class="btn">Kembali</a>
+        <a href="dashboard.php" class="btn">Kembali</a>
 
         <table border="1" cellpadding="8" cellspacing="0">
             <tr>
