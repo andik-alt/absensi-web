@@ -2,14 +2,19 @@
 require 'auth.php';
 include 'koneksi.php';
 
-$tanggal = isset($_GET['tanggal']) ? $_GET['tanggal'] : date('Y-m-d');
+$tanggal = $_GET['tanggal'] ?? date('Y-m-d');
+$cekTanggal = DateTime::createFromFormat('Y-m-d', $tanggal);
+if (!$cekTanggal || $cekTanggal->format('Y-m-d') !== $tanggal) {
+    $tanggal = date('Y-m-d');
+}
 
 $stmt = $koneksi->prepare("
-    SELECT a.tanggal, a.jam, a.status, s.nisn, s.nama, s.kelas
+    SELECT a.tanggal, a.jam_masuk, a.jam_pulang, a.status_masuk,
+           s.nisn, s.nama, s.kelas
     FROM absensi a
     JOIN siswa s ON a.nisn = s.nisn
     WHERE a.tanggal = ?
-    ORDER BY a.jam ASC
+    ORDER BY COALESCE(a.jam_masuk, '00:00:00') ASC, s.nama ASC
 ");
 $stmt->bind_param("s", $tanggal);
 $stmt->execute();
@@ -34,7 +39,7 @@ $result = $stmt->get_result();
         </form>
 
         <br>
-        <a href="index.php" class="btn">Kembali</a>
+        <a href="dashboard.php" class="btn">Kembali</a>
 
         <table border="1" cellpadding="8" cellspacing="0">
             <tr>
@@ -42,7 +47,8 @@ $result = $stmt->get_result();
                 <th>NISN</th>
                 <th>Nama</th>
                 <th>Kelas</th>
-                <th>Jam</th>
+                <th>Masuk</th>
+                <th>Pulang</th>
                 <th>Status</th>
             </tr>
 
@@ -53,13 +59,14 @@ $result = $stmt->get_result();
                         <td><?= htmlspecialchars($row['nisn']) ?></td>
                         <td><?= htmlspecialchars($row['nama']) ?></td>
                         <td><?= htmlspecialchars($row['kelas']) ?></td>
-                        <td><?= htmlspecialchars($row['jam']) ?></td>
-                        <td><?= htmlspecialchars($row['status']) ?></td>
+                        <td><?= !empty($row['jam_masuk']) ? htmlspecialchars($row['jam_masuk']) : '-' ?></td>
+                        <td><?= !empty($row['jam_pulang']) ? htmlspecialchars($row['jam_pulang']) : '-' ?></td>
+                        <td><?= htmlspecialchars($row['status_masuk'] ?? '-') ?></td>
                     </tr>
                 <?php endwhile; ?>
             <?php else: ?>
                 <tr>
-                    <td colspan="6">Belum ada data absensi untuk tanggal ini.</td>
+                    <td colspan="7">Belum ada data absensi untuk tanggal ini.</td>
                 </tr>
             <?php endif; ?>
         </table>
