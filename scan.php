@@ -49,7 +49,7 @@ $action = $mode === 'pulang' ? 'proses_pulang.php' : 'proses_absen.php';
     <a href="index.php">Kembali</a>
 </div>
 
-<script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <script>
 const input = document.getElementById('nisn');
 const form = document.getElementById('formScan');
@@ -86,7 +86,7 @@ btnCamera.addEventListener('click', async function() {
     try {
         await scanner.start(
             { facingMode: "environment" },
-            { fps: 10, qrbox: { width: 250, height: 250 } },
+            { fps: 10, qrbox: (w, h) => ({ width: Math.floor(w * 0.9), height: Math.floor(Math.min(w, h) * 0.4) }) },
             (decodedText) => {
                 if (sudahScan) return;
                 sudahScan = true;
