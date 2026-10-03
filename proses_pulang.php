@@ -32,7 +32,11 @@ if (!$siswa) {
     $absen = $cek->get_result()->fetch_assoc();
     $cek->close();
 
-    if (!$absen || empty($absen['jam_masuk'])) {
+    if (
+        !$absen ||
+        empty($absen['jam_masuk']) ||
+        !in_array($absen['status_masuk'], ['Hadir', 'Terlambat'], true)
+    ) {
         $status = "belum_masuk";
         $pesan = "SISWA BELUM ABSEN MASUK HARI INI";
     } elseif (!empty($absen['jam_pulang'])) {
