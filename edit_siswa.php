@@ -4,7 +4,6 @@ include 'koneksi.php';
 
 $pesan = "";
 
-
 if (!isset($_GET['id']) && !isset($_POST['id'])) {
     die("ID siswa tidak ditemukan.");
 }
@@ -15,19 +14,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $nama    = trim($_POST['nama']);
     $kelas   = trim($_POST['kelas']);
     $jurusan = trim($_POST['jurusan']);
+    $no_ortu = trim($_POST['no_ortu'] ?? '');
 
     if ($nama === "" || $kelas === "" || $jurusan === "") {
         $pesan = "Semua kolom wajib diisi!";
     } else {
-        $stmt = $koneksi->prepare("UPDATE siswa SET nama = ?, kelas = ?, jurusan = ? WHERE id = ?");
-        $stmt->bind_param("sssi", $nama, $kelas, $jurusan, $id);
+        $stmt = $koneksi->prepare(
+            "UPDATE siswa
+             SET nama = ?, kelas = ?, jurusan = ?, no_ortu = ?
+             WHERE id = ?"
+        );
+
+        $stmt->bind_param(
+            "ssssi",
+            $nama,
+            $kelas,
+            $jurusan,
+            $no_ortu,
+            $id
+        );
 
         if ($stmt->execute()) {
             header("Location: siswa.php");
             exit;
         } else {
-            $pesan = "Gagal menyimpan perubahan: " . $koneksi->error;
+            $pesan = "Gagal menyimpan perubahan: " . $stmt->error;
         }
+
         $stmt->close();
     }
 }
@@ -47,6 +60,7 @@ if (!$siswa) {
 <html lang="id">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Edit Siswa</title>
     <link rel="stylesheet" href="style.css">
 </head>
@@ -60,21 +74,42 @@ if (!$siswa) {
         <?php endif; ?>
 
         <form method="POST" action="edit_siswa.php">
-            <input type="hidden" name="id" value="<?= $siswa['id'] ?>">
+
+            <input type="hidden"
+                   name="id"
+                   value="<?= htmlspecialchars($siswa['id']) ?>">
 
             <label>NISN</label><br>
-            <input type="text" value="<?= htmlspecialchars($siswa['nisn']) ?>" disabled><br><br>
+            <input type="text"
+                   value="<?= htmlspecialchars($siswa['nisn']) ?>"
+                   disabled><br><br>
 
             <label>Nama</label><br>
-            <input type="text" name="nama" value="<?= htmlspecialchars($siswa['nama']) ?>" required><br><br>
+            <input type="text"
+                   name="nama"
+                   value="<?= htmlspecialchars($siswa['nama']) ?>"
+                   required><br><br>
 
             <label>Kelas</label><br>
-            <input type="text" name="kelas" value="<?= htmlspecialchars($siswa['kelas']) ?>" required><br><br>
+            <input type="text"
+                   name="kelas"
+                   value="<?= htmlspecialchars($siswa['kelas']) ?>"
+                   required><br><br>
 
             <label>Jurusan</label><br>
-            <input type="text" name="jurusan" value="<?= htmlspecialchars($siswa['jurusan']) ?>" required><br><br>
+            <input type="text"
+                   name="jurusan"
+                   value="<?= htmlspecialchars($siswa['jurusan']) ?>"
+                   required><br><br>
+
+            <label>Nomor WhatsApp Orang Tua</label><br>
+            <input type="text"
+                   name="no_ortu"
+                   value="<?= htmlspecialchars($siswa['no_ortu'] ?? '') ?>"
+                   placeholder="Contoh: 081234567890"><br><br>
 
             <button type="submit">SIMPAN PERUBAHAN</button>
+
         </form>
 
         <br>
