@@ -9,6 +9,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $nama    = trim($_POST['nama']);
     $kelas   = trim($_POST['kelas']);
     $jurusan = trim($_POST['jurusan']);
+    $no_ortu = trim($_POST['no_ortu'] ?? '');
 
     if ($nisn === "" || $nama === "" || $kelas === "" || $jurusan === "") {
         $pesan = "Semua kolom wajib diisi!";
@@ -21,8 +22,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($cekResult->num_rows > 0) {
             $pesan = "NISN sudah terdaftar!";
         } else {
-            $stmt = $koneksi->prepare("INSERT INTO siswa (nisn, nama, kelas, jurusan) VALUES (?, ?, ?, ?)");
-            $stmt->bind_param("ssss", $nisn, $nama, $kelas, $jurusan);
+            $stmt = $koneksi->prepare(
+                "INSERT INTO siswa (nisn, nama, kelas, jurusan, no_ortu)
+                 VALUES (?, ?, ?, ?, ?)"
+            );
+
+            $stmt->bind_param(
+                "sssss",
+                $nisn,
+                $nama,
+                $kelas,
+                $jurusan,
+                $no_ortu
+            );
 
             if ($stmt->execute()) {
                 header("Location: siswa.php");
@@ -30,8 +42,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             } else {
                 $pesan = "Gagal menyimpan data: " . $koneksi->error;
             }
+
             $stmt->close();
         }
+
         $cek->close();
     }
 }
@@ -40,6 +54,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <html lang="id">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tambah Siswa</title>
     <link rel="stylesheet" href="style.css">
 </head>
@@ -53,6 +68,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <?php endif; ?>
 
         <form method="POST" action="tambah_siswa.php">
+
             <label>NISN</label><br>
             <input type="text" name="nisn" required><br><br>
 
@@ -64,6 +80,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             <label>Jurusan</label><br>
             <input type="text" name="jurusan" required><br><br>
+
+            <label>Nomor WhatsApp Orang Tua</label><br>
+            <input
+                type="text"
+                name="no_ortu"
+                placeholder="Contoh: 081234567890"
+            ><br><br>
 
             <button type="submit">SIMPAN</button>
         </form>
