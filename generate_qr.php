@@ -1,4 +1,5 @@
 <?php
+require 'auth.php';
 require 'vendor/autoload.php';
 include 'koneksi.php';
 
