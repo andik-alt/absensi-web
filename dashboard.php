@@ -4,15 +4,22 @@ include 'koneksi.php';
 
 $tanggal = date('Y-m-d');
 
+/* Tanggal dalam bahasa Indonesia */
 $nama_hari  = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
 $nama_bulan = [1 => 'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
                'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
 $tanggal_indo = $nama_hari[(int) date('w')] . ', ' . date('d') . ' ' .
                 $nama_bulan[(int) date('n')] . ' ' . date('Y');
 
+/* Total siswa */
 $result = $koneksi->query("SELECT COUNT(*) AS total FROM siswa");
 $total_siswa = (int) $result->fetch_assoc()['total'];
 
+/*
+ * Statistik absensi hari ini.
+ * INNER JOIN siswa: absensi milik siswa yang sudah dihapus tidak ikut terhitung.
+ * Izin dan Sakit dihitung terpisah, tidak dianggap "sudah masuk".
+ */
 $stmt_stat = $koneksi->prepare("
     SELECT
         COUNT(*) AS total_absen,
@@ -42,6 +49,7 @@ $sudah_masuk  = $hadir + $terlambat;
 $belum_absen  = max(0, $total_siswa - $total_absen);
 $belum_pulang = max(0, $sudah_masuk - $sudah_pulang);
 
+/* Jadwal */
 $pengaturan = null;
 $cek_pengaturan = $koneksi->query("SELECT * FROM pengaturan_absensi ORDER BY id DESC LIMIT 1");
 if ($cek_pengaturan && $cek_pengaturan->num_rows > 0) {
@@ -62,6 +70,8 @@ if ($pengaturan) {
         $jam_pulang_hari_ini = $pengaturan['jam_pulang_khusus'];
     }
 }
+
+/* 10 absensi terbaru hari ini */
 $stmt_terbaru = $koneksi->prepare("
     SELECT
         s.nisn,
