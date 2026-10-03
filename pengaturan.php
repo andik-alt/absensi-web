@@ -1,4 +1,5 @@
 <?php
+require 'auth.php';
 include 'koneksi.php';
 
 $pesan = '';
@@ -184,7 +185,7 @@ button {
         </form>
 
         <p style="margin-top:20px;">
-            <a href="index.php">← Kembali ke Dashboard</a>
+            <a href="dashboard.php">← Kembali ke Dashboard</a>
         </p>
     </div>
 </div>
