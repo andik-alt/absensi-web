@@ -3,29 +3,43 @@ require 'auth.php';
 include 'koneksi.php';
 
 $bulan = $_GET['bulan'] ?? date('Y-m');
+
 if (!preg_match('/^\d{4}-(0[1-9]|1[0-2])$/', $bulan)) {
     $bulan = date('Y-m');
 }
+
 $jumlahHari = (int) date('t', strtotime($bulan . '-01'));
 $hariIni = date('Y-m-d');
 
 $daftarSiswa = [];
 $res = $koneksi->query("SELECT id, nisn, nama, kelas FROM siswa ORDER BY nama ASC");
-while ($row = $res->fetch_assoc()) {
-    $daftarSiswa[] = $row;
+
+if ($res) {
+    while ($row = $res->fetch_assoc()) {
+        $daftarSiswa[] = $row;
+    }
 }
 
-$stmt = $koneksi->prepare("SELECT nisn, tanggal, status_masuk FROM absensi WHERE DATE_FORMAT(tanggal, '%Y-%m') = ?");
+/* Sistem baru menggunakan status_masuk, bukan kolom status lama. */
+$stmt = $koneksi->prepare(
+    "SELECT nisn, tanggal, status_masuk
+     FROM absensi
+     WHERE DATE_FORMAT(tanggal, '%Y-%m') = ?"
+);
 $stmt->bind_param("s", $bulan);
 $stmt->execute();
 $hasil = $stmt->get_result();
+
 $absensiPerSiswa = [];
+
 while ($row = $hasil->fetch_assoc()) {
     $absensiPerSiswa[$row['nisn']][$row['tanggal']] = $row['status_masuk'];
 }
+
 $stmt->close();
 
 $rekapAkhir = [];
+
 foreach ($daftarSiswa as $siswa) {
     $nisn = $siswa['nisn'];
     $masuk = 0;
@@ -37,7 +51,7 @@ foreach ($daftarSiswa as $siswa) {
     for ($tgl = 1; $tgl <= $jumlahHari; $tgl++) {
         $tanggalLengkap = $bulan . '-' . str_pad($tgl, 2, '0', STR_PAD_LEFT);
         $timestamp = strtotime($tanggalLengkap);
-        $isWeekend = in_array(date('w', $timestamp), [0, 6]); // Minggu & Sabtu = libur
+        $isWeekend = in_array((int) date('w', $timestamp), [0, 6], true);
         $isMasaDepan = $tanggalLengkap > $hariIni;
 
         if ($isWeekend || $isMasaDepan) {
@@ -69,8 +83,12 @@ foreach ($daftarSiswa as $siswa) {
     ]);
 }
 
-$namaBulanIndo = ['01'=>'Januari','02'=>'Februari','03'=>'Maret','04'=>'April','05'=>'Mei','06'=>'Juni',
-                   '07'=>'Juli','08'=>'Agustus','09'=>'September','10'=>'Oktober','11'=>'November','12'=>'Desember'];
+$namaBulanIndo = [
+    '01'=>'Januari','02'=>'Februari','03'=>'Maret','04'=>'April',
+    '05'=>'Mei','06'=>'Juni','07'=>'Juli','08'=>'Agustus',
+    '09'=>'September','10'=>'Oktober','11'=>'November','12'=>'Desember'
+];
+
 $bagianBulan = explode('-', $bulan);
 $labelBulan = $namaBulanIndo[$bagianBulan[1]] . ' ' . $bagianBulan[0];
 ?>
@@ -78,24 +96,27 @@ $labelBulan = $namaBulanIndo[$bagianBulan[1]] . ' ' . $bagianBulan[0];
 <html lang="id">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Rekap Absensi Bulanan</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-    <div class="container">
-        <h1>REKAP ABSENSI BULANAN</h1>
-        <p>Bulan: <strong><?= htmlspecialchars($labelBulan) ?></strong></p>
+<div class="container">
+    <h1>REKAP ABSENSI BULANAN</h1>
 
-        <form method="GET" action="rekap.php">
-            <label>Pilih Bulan:</label><br>
-            <input type="month" name="bulan" value="<?= htmlspecialchars($bulan) ?>">
-            <button type="submit">Tampilkan</button>
-        </form>
+    <p>Bulan: <strong><?= htmlspecialchars($labelBulan) ?></strong></p>
 
-        <br>
-        <a href="dashboard.php" class="btn">Kembali</a>
+    <form method="GET" action="rekap.php">
+        <label>Pilih Bulan:</label><br>
+        <input type="month" name="bulan" value="<?= htmlspecialchars($bulan) ?>" required>
+        <button type="submit">Tampilkan</button>
+    </form>
 
+    <br>
+    <a href="index.php" class="btn">Kembali</a>
+
+    <div style="overflow-x:auto; margin-top:20px;">
         <table border="1" cellpadding="8" cellspacing="0">
             <tr>
                 <th>NISN</th>
@@ -115,33 +136,24 @@ $labelBulan = $namaBulanIndo[$bagianBulan[1]] . ' ' . $bagianBulan[0];
                         <td><?= htmlspecialchars($row['nisn']) ?></td>
                         <td><?= htmlspecialchars($row['nama']) ?></td>
                         <td><?= htmlspecialchars($row['kelas']) ?></td>
-                        <td style="color:green; font-weight:bold; font-size:16px;">
-                            <?= $row['masuk'] ?>
-                        </td>
-                        <td style="<?= $row['terlambat'] > 0 ? 'color:orange; font-weight:bold;' : 'color:gray;' ?>">
-                            <?= $row['terlambat'] ?>
-                        </td>
-                        <td style="<?= $row['izin'] > 0 ? 'color:#2563eb; font-weight:bold;' : 'color:gray;' ?>">
-                            <?= $row['izin'] ?>
-                        </td>
-                        <td style="<?= $row['sakit'] > 0 ? 'color:#2563eb; font-weight:bold;' : 'color:gray;' ?>">
-                            <?= $row['sakit'] ?>
-                        </td>
-                        <td style="<?= $row['tidak_masuk'] > 0 ? 'color:red; font-weight:bold; font-size:16px;' : 'color:gray;' ?>">
-                            <?= $row['tidak_masuk'] ?>
-                        </td>
+                        <td><?= $row['masuk'] ?></td>
+                        <td><?= $row['terlambat'] ?></td>
+                        <td><?= $row['izin'] ?></td>
+                        <td><?= $row['sakit'] ?></td>
+                        <td><?= $row['tidak_masuk'] ?></td>
                         <td>
-                            <a href="rekap_detail.php?nisn=<?= urlencode($row['nisn']) ?>&bulan=<?= urlencode($bulan) ?>">Lihat Tanggal</a>
+                            <a href="rekap_detail.php?nisn=<?= urlencode($row['nisn']) ?>&bulan=<?= urlencode($bulan) ?>">
+                                Lihat Tanggal
+                            </a>
                         </td>
                     </tr>
                 <?php endforeach; ?>
             <?php else: ?>
-                <tr>
-                    <td colspan="9">Belum ada data siswa.</td>
-                </tr>
+                <tr><td colspan="9">Belum ada data siswa.</td></tr>
             <?php endif; ?>
         </table>
     </div>
+</div>
 
 </body>
 </html>
